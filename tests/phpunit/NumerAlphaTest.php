@@ -132,14 +132,17 @@ class NumerAlphaTest extends MediaWikiTestCase {
 			'"list-with-levels" should equal 1, increasing level resets counter'
 		);
 
-		/** outline-format list with levels and non-standard level prefix
+		/** outline-format list with levels, non-standard level prefix, varying types, and implicit levels
 			{{#counter:outline-list-with-levels|level prefix=_|format=outline}} Start lev 1
 			{{#counter:}} Stay lev 1
 			{{#counter:|level=2}} Jump to lev 2
 			{{#counter:}} Stay lev 2
 			{{#counter:|level=1}} Drop to lev 1
-			{{#counter:|level=2}} back to lev 2
-			{{#counter:|level=3}} jump to lev 3
+			{{#counter:|level=2|type=alpha}} back to lev 2, type alpha
+			{{#counter:|level=3|type=roman}} jump to lev 3, type roman
+			{{#counter:|level=5}} jump to lev 5, no type, implicit numeral lev 4
+			{{#counter:|level=4|type=alpha}} drop to lev 4, change to alpha type
+			{{#counter:|level=2}} drop to lev 2
 
 			Results in:
 			_1
@@ -147,8 +150,11 @@ class NumerAlphaTest extends MediaWikiTestCase {
 			__2.1
 			__2.2
 			_3
-			__3.1
-			___3.1.1
+			__3.a
+			___3.a.i
+			_____3.a.i.1.1
+			____3.a.i.b
+			__3.b
 		*/
 		$this->assertEquals(
 			'_1',
@@ -161,29 +167,44 @@ class NumerAlphaTest extends MediaWikiTestCase {
 			'"outline-list-with-levels" second item should equal 2, remembering last counter and maintains level'
 		);
 		$this->assertEquals(
-			'__1',
-			NumerAlpha::renderCounter( $parser, $frame, array('','level=2') ),
+			'__2.1',
+			NumerAlpha::renderCounter( $parser, $frame, array( '', 'level=2' ) ),
 			'"outline-list-with-levels" first item at level 2 should equal 1'
 		);
 		$this->assertEquals(
-			'__2',
+			'__2.2',
 			NumerAlpha::renderCounter( $parser, $frame, array() ),
 			'"outline-list-with-levels" second item at level 2 should equal 2, remembering last counter and maintains level'
 		);
 		$this->assertEquals(
 			'_3',
-			NumerAlpha::renderCounter( $parser, $frame, array('', ' level =1') ),
+			NumerAlpha::renderCounter( $parser, $frame, array( '', ' level =1' ) ),
 			'"outline-list-with-levels" third item at level 1 should equal 3, remembers level'
 		);
 		$this->assertEquals(
-			'__1',
-			NumerAlpha::renderCounter( $parser, $frame, array('', 'level=2') ),
-			'"outline-list-with-levels" should equal 1, previous higher level increment resets lower level counters'
+			'__3.a',
+			NumerAlpha::renderCounter( $parser, $frame, array( '', 'level=2', 'type=alpha' ) ),
+			'"outline-list-with-levels" should equal a, previous higher level increment resets lower level counters, change type to alpha'
 		);
 		$this->assertEquals(
-			'___1',
-			NumerAlpha::renderCounter( $parser, $frame, array(' ','level=3') ),
-			'"outline-list-with-levels" should equal 1, increasing level resets counter'
+			'___3.a.i',
+			NumerAlpha::renderCounter( $parser, $frame, array( ' ', 'level=3', 'type=roman' ) ),
+			'"outline-list-with-levels" should equal i, increasing level resets counter, level 2 still alpha, level 3 type roman'
+		);
+		$this->assertEquals(
+			'_____3.a.i.1.1',
+			NumerAlpha::renderCounter( $parser, $frame, array( ' ', 'level=5' ) ),
+			'"outline-list-with-levels" implicit level 4 should equal 1, new level 5 should also equal 1, previous types maintained'
+		);
+		$this->assertEquals(
+			'____3.a.i.b',
+			NumerAlpha::renderCounter( $parser, $frame, array( ' ', 'level=4', 'type=alpha' ) ),
+			'"outline-list-with-levels" increment implicit level 4, change type to alpha, should equal b, previous types maintained'
+		);
+		$this->assertEquals(
+			'__3.b',
+			NumerAlpha::renderCounter( $parser, $frame, array( ' ', 'level=2' ) ),
+			'"outline-list-with-levels" drop to level 2, should equal b, previous types maintained'
 		);
 	}
 
